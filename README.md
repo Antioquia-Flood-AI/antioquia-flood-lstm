@@ -1,106 +1,161 @@
-# 🌊 Antioquia Flood AI — Fase 2: Modelo LSTM de Predicción de Inundaciones
+# 🌊 Antioquia Flood LSTM — Predicción de Profundidad de Inundación con Red Neuronal Profunda
 
-> **Proyecto académico — Universidad Nacional de Colombia, sede Bogotá**  
-> Asignatura: Redes Neuronales  
-> Grupo: **Antioquia Flood AI**
-
----
-
-## 📌 Descripción general
-
-Este repositorio contiene la **Fase 2 (modelo final)** del proyecto de predicción de inundaciones en el departamento de Antioquia, Colombia.
-
-La Fase 1 ([`antioquia-flood-mlp`](https://github.com/Antioquia-Flood-AI/antioquia-flood-mlp)) exploró arquitecturas de redes poco profundas (MLP). Esta fase expande la investigación hacia **Deep Learning** con una red **LSTM (Long Short-Term Memory)**, capaz de capturar dependencias temporales en series de precipitación e integrar variables espaciales derivadas de imágenes satelitales y modelos de elevación digital.
+> **Fase 2 · Modelo final** — Red LSTM (Long Short-Term Memory) para predicción de profundidad de inundación en municipios de Antioquia, Colombia.  
+> Construida sobre la línea base establecida en la [Fase 1 (MLP)](https://github.com/Antioquia-Flood-AI/antioquia-flood-mlp).
 
 ---
 
-## 👥 Equipo
+## ❓ Pregunta de investigación
 
-| Rol | Nombre |
-|-----|--------|
-| Proyecto académico | Universidad Nacional de Colombia, sede Bogotá |
-| Asignatura | Redes Neuronales |
-| Grupo | Antioquia Flood AI |
+> **¿Dada la secuencia de precipitación horaria reciente y las condiciones espaciales del terreno, qué profundidad de inundación se espera en las próximas horas?**
 
 ---
 
 ## 🧠 Arquitectura del modelo
 
-### Red LSTM (Long Short-Term Memory)
-
-| Característica | Detalle |
+| Componente | Detalle |
 |---|---|
-| **Tipo de red** | LSTM — Deep Neural Network |
+| **Tipo** | Deep Neural Network — LSTM (Long Short-Term Memory) |
+| **Entrada secuencial** | Series temporales de precipitación horaria por estación IDEAM |
+| **Features espaciales** | DEM SRTM (elevación, pendiente, distancia a ríos) + MapBiomas (cobertura del suelo) |
 | **Tipo de problema** | Clasificación multiclase de profundidad de inundación |
-| **Clases objetivo** | `<0.5 m` / `0.5–1.0 m` / `1.0–1.5 m` / `>1.5 m` |
-
-La arquitectura LSTM se eligió por su capacidad estándar para modelar **series temporales hidrológicas**, procesando la secuencia de precipitación horaria como entrada principal y complementándola con *features* espaciales del DEM y la cobertura del suelo.
+| **Clases de salida** | `<0.5 m` / `0.5–1.0 m` / `1.0–1.5 m` / `>1.5 m` |
+| **Salida** | Softmax (probabilidad por categoría de profundidad) |
 
 ---
 
-## 📥 Variables de entrada (X)
+## 📥 Variables de entrada (features)
 
-| Fuente | Variable | Descripción |
-|--------|----------|-------------|
-| **IDEAM** | Precipitación horaria por estación | Serie temporal secuencial — entrada principal al LSTM |
-| **Sentinel-1 (SAR)** | Bandas VV y VH | Imágenes de radar de apertura sintética para el período analizado |
-| **DEM SRTM** | Elevación | Modelo digital de elevación del terreno |
-| **DEM SRTM** | Pendiente | Gradiente topográfico calculado a partir del DEM |
-| **DEM SRTM** | Distancia a ríos | Proximidad a la red hidrográfica |
-| **MapBiomas** | Clase de uso del suelo | Categoría de cobertura vegetal o uso humano |
-| **MapBiomas** | Impermeabilidad | Porcentaje de superficie impermeable por celda |
+| # | Variable | Fuente | Descripción |
+|---|---|---|---|
+| 1 | Precipitación horaria por estación | IDEAM | Serie temporal secuencial — entrada principal al LSTM |
+| 2 | Banda SAR VV | Sentinel-1 | Backscatter en polarización vertical-vertical para el período analizado |
+| 3 | Banda SAR VH | Sentinel-1 | Backscatter en polarización vertical-horizontal para el período analizado |
+| 4 | Elevación media | DEM SRTM | Elevación del terreno derivada del modelo digital de elevación (30 m) |
+| 5 | Pendiente | DEM SRTM | Gradiente topográfico calculado a partir del DEM |
+| 6 | Distancia a ríos | DEM SRTM | Proximidad al cauce más cercano derivada de la red hidrográfica |
+| 7 | Clase de uso del suelo | MapBiomas | Categoría de cobertura vegetal o uso humano |
+| 8 | Impermeabilidad | MapBiomas | Porcentaje de superficie impermeable por celda |
 
 ---
 
 ## 🎯 Variable objetivo (Y)
 
-Categoría de **profundidad de inundación** según los polígonos de períodos de retorno del IDEAM:
+| Clase | Profundidad | Período de retorno de referencia |
+|---|---|---|
+| 1 | `< 0.5 m` | TR10 — período de retorno 10 años |
+| 2 | `0.5 – 1.0 m` | TR20 — período de retorno 20 años |
+| 3 | `1.0 – 1.5 m` | TR50 — período de retorno 50 años |
+| 4 | `> 1.5 m` | TR100 — período de retorno 100 años |
 
-| Código | Período de retorno |
-|--------|-------------------|
-| TR10 | 10 años |
-| TR20 | 20 años |
-| TR50 | 50 años |
-| TR100 | 100 años |
-
-Las clases de profundidad son: **`<0.5 m`**, **`0.5–1.0 m`**, **`1.0–1.5 m`** y **`>1.5 m`**.
+La etiqueta proviene de los **polígonos de inundación TR10/TR20/TR50/TR100 del IDEAM**.
 
 ---
 
-## ✅ Justificación técnica
+## 🗂️ Fuentes de datos
 
-El LSTM es la arquitectura estándar para series temporales hidrológicas. Estudios colombianos recientes validaron su eficacia con datos similares:
-
-- **Río Tuluá (2025):** correlación de hasta **0.98** con datos de precipitación y DEM.
-- **Boyacá (2024):** resultados equivalentes usando arquitecturas LSTM sobre series horarias del IDEAM.
-
-Estas referencias respaldan la elección del LSTM como modelo final de este proyecto.
+| Fuente | Tipo de datos |
+|---|---|
+| <a href="http://www.ideam.gov.co/">IDEAM</a> | Series de precipitación horaria por estación + polígonos TR de inundación |
+| <a href="https://sentinel.esa.int/web/sentinel/missions/sentinel-1">Sentinel-1 (ESA/Copernicus)</a> | Imágenes SAR (bandas VV y VH) |
+| <a href="https://www2.jpl.nasa.gov/srtm/">NASA SRTM DEM</a> | Modelo digital de elevación (resolución 30 m) |
+| <a href="https://colombia.mapbiomas.org/">MapBiomas Colombia</a> | Cobertura y uso del suelo (impervious surface) |
+| <a href="https://dagran.antioquia.gov.co/">DAGRAN</a> | Reportes históricos de inundaciones en Antioquia |
 
 ---
 
-## 🗂 Estructura del repositorio
+## ✅ Justificación del modelo
+
+El LSTM es la **arquitectura estándar para series temporales hidrológicas**. Su uso permite:
+
+- Capturar **dependencias temporales** en la secuencia de precipitación horaria que un MLP no puede modelar.
+- Integrar **features espaciales** del DEM e imágenes SAR como contexto complementario a la serie temporal.
+- Predecir no solo si ocurre una inundación, sino **qué tan profunda será**, superando la clasificación binaria de la Fase 1.
+
+Estudios colombianos recientes validan esta elección:
+- **Río Tuluá (2025):** correlación de hasta **0.98** con arquitectura LSTM sobre datos similares.
+- **Boyacá (2024):** resultados equivalentes usando series horarias del IDEAM con LSTM.
+
+---
+
+## 🗺️ Cobertura geográfica
+
+- **Departamento:** Antioquia, Colombia
+- **Unidad de análisis:** Municipio / celda espacial
+- **Número de municipios:** 125
+
+---
+
+## 🔁 Flujo de trabajo
+
+```
+Datos crudos (IDEAM, Sentinel-1, SRTM, MapBiomas, DAGRAN)
+        │
+        ▼
+Preprocesamiento & feature engineering
+(ventanas temporales de precipitación, alineación espacial de rasters)
+        │
+        ▼
+Entrenamiento LSTM (PyTorch / Keras)
+        │
+        ▼
+Evaluación: F1 · AUC-ROC · Recall · Matriz de confusión multiclase
+        │
+        ▼
+Comparación con línea base MLP (Fase 1)
+```
+
+---
+
+## 🛠️ Stack tecnológico
+
+- **Lenguaje:** Python 3.10+
+- **Entorno de desarrollo:** Google Colab / Kaggle Notebooks
+- **Frameworks de ML:** PyTorch o Keras (TensorFlow)
+- **Manipulación de datos:** pandas, numpy
+- **Datos geoespaciales:** geopandas, rasterio
+- **Visualización:** matplotlib, seaborn
+
+---
+
+## 📁 Estructura del proyecto
 
 ```
 antioquia-flood-lstm/
-├── README.md          # Documentación del proyecto
-├── LICENSE            # Licencia del repositorio
-└── .gitignore
+├── data/
+│   ├── raw/            # Datos originales sin procesar
+│   └── processed/      # Datos limpios y features generadas
+├── notebooks/          # Jupyter / Colab notebooks
+├── src/
+│   ├── data/           # Scripts de descarga y preprocesamiento
+│   ├── features/       # Ingeniería de características
+│   └── models/         # Definición y entrenamiento del LSTM
+├── models/             # Modelos entrenados (.pt / .h5)
+├── reports/            # Métricas, gráficas y resultados
+├── requirements.txt
+└── README.md
 ```
-
-> Los notebooks, scripts de preprocesamiento y el modelo entrenado se añadirán conforme avance el desarrollo.
 
 ---
 
-## 🔗 Referencias y recursos
+## 📊 Métricas de evaluación
 
-- Fase 1 del proyecto (MLP): [antioquia-flood-mlp](https://github.com/Antioquia-Flood-AI/antioquia-flood-mlp)
-- Datos de estaciones: [IDEAM](http://www.ideam.gov.co/)
-- Imágenes SAR: [Sentinel-1, Copernicus/ESA](https://sentinel.esa.int/web/sentinel/missions/sentinel-1)
-- DEM: [SRTM, NASA](https://www2.jpl.nasa.gov/srtm/)
-- Cobertura del suelo: [MapBiomas Colombia](https://colombia.mapbiomas.org/)
+Dado el desbalance esperado de clases, se priorizan las mismas métricas de referencia usadas en la Fase 1:
+
+- **AUC-ROC** — capacidad discriminativa general (versión multiclase OvR)
+- **F1-score (macro)** — balance entre precisión y recall en todas las clases
+- **Recall (sensibilidad)** — minimizar falsos negativos en clases de mayor profundidad
+- **Matriz de confusión multiclase** — análisis detallado de errores entre categorías
+
+---
+
+## 👥 Equipo
+
+- Proyecto académico — Universidad Nacional de Colombia, sede Bogotá
+- Grupo: **Antioquia Flood AI** - Equipo de trabajo de la asignatura Redes Neuronales
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto se distribuye bajo los términos de la licencia incluida en el archivo [`LICENSE`](./LICENSE).
+Este proyecto está bajo la licencia incluida en el archivo <a href="./LICENSE">LICENSE</a>.
