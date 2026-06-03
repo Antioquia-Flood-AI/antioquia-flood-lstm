@@ -11,7 +11,7 @@
 | [INFORME_MODELO.md](./docs/INFORME_MODELO.md) | Informe técnico del modelo LightGBM: métricas, arquitectura, features y limitaciones. |
 | [DATOS_Y_FUENTES.md](./docs/DATOS_Y_FUENTES.md) | Catálogo completo de fuentes de datos y procesamiento. |
 | [BITACORA_EXPERIMENTOS.md](./docs/BITACORA_EXPERIMENTOS.md) | Historial de experimentos, errores y lecciones aprendidas. |
-
+| [HALLAZGOS_Y_DESCUBRIMIENTOS.md](./docs/HALLAZGOS_Y_DESCUBRIMIENTOS.md) | Síntesis de todo lo descubierto en Fase 2 y la exploración post-entrega. Le servirá para el que quiera mejorar esto |
 ---
 
 ## 📁 Estructura del repositorio
