@@ -192,3 +192,35 @@ Se construyó un dataset extendido 1981-2025 usando ERA5-Land (Open-Meteo) para 
 | `susceptibilidad_nina_municipio.csv` | 3 KB | Susceptibilidad por municipio |
 | `river_density_by_municipio.parquet` | 8 KB | Densidad de drenaje |
 | `Nivel_Mínimo_del_Rio_20260531_clean.csv` | 66 MB | Niveles de río (horario) |
+
+---
+
+## 6. Plataformas de Procesamiento
+
+| Plataforma | Uso | Detalle |
+|-----------|-----|---------|
+| **Google Earth Engine** | Extracción de datos satelitales | CHIRPS, SAR Sentinel-1, MapBiomas. Proyecto `lluvias-2026`. Scripts en `GEE CODE/`. |
+| **Google Colab** | Entrenamiento y descarga masiva | Optuna v2 (GPU T4), descarga ERA5-Land 3 cuentas (round-robin 41 municipios c/u), fusión IDEAM+CHIRPS (high-RAM). |
+| **Python Local (CachyOS)** | Feature engineering y modelo final | LightGBM, SHAP, pysheds (DEM 30m D8 flow), geopandas + networkx (grafo drenaje), PyTorch Geometric (GraphSAGE). |
+| **Open-Meteo API** | Descarga ERA5-Land | `https://archive-api.open-meteo.com/v1/archive` — sequential, 6s delay, retry on 429. |
+| **ASF/JAXA G-Portal** | Búsqueda ALOS-2 Banda L | `https://search.asf.alaska.edu/` + `https://gportal.jaxa.jp/` — datos SAR Banda L para Fase 3. |
+
+---
+
+## 7. Resumen de Fuentes
+
+| # | Fuente | Tipo | Período | En modelo |
+|:-:|--------|------|---------|:---------:|
+| 1 | CHIRPS (UCSB) | Precipitación ~5km | 2018–2026 | ✅ 39.3% |
+| 2 | Open-Meteo (ERA5-Land) | Temp, humedad, viento | 2018–2026 | ✅ 13.2% |
+| 3 | ERA5-Land (ECMWF) | Precipitación histórica | 1981–2025 | ❌ (bajó AUROC) |
+| 4 | IDEAM | Precipitación observada | 2018–2026 | ❌ (63/123 mun) |
+| 5 | IDEAM DHIME | Niveles de río | 2018–2026 | ❌ (90-95% nulos) |
+| 6 | Sentinel-1 (ESA) | SAR Banda C | 2018–2026 | ✅ 20.2% |
+| 7 | NOAA CPC | Índices ENSO/QBO | 2018–2026 | ✅ 11.6% |
+| 8 | AW3D30 DEM (JAXA) | Topografía 30m | Estático | ✅ 14.6% |
+| 9 | TR IGAC/IDEAM | Amenaza inundación | Estático | ✅ 5.6% |
+| 10 | Carto100000 (IGAC) | Drenajes, límites | Estático | ✅ 0.7% |
+| 11 | DAGRAN | Ground truth | 2015–2026 | ✅ Target |
+| 12 | UNGRD | Ground truth alternativo | 1998–2025 | ❌ (ruidoso) |
+| 13 | DFO (Dartmouth) | Ground truth satelital | 2019–2020 | ❌ (119 eventos) |
